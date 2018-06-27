@@ -32,6 +32,10 @@ static RyzeConfinger * confinger;
 }
 // 设置单次上传条数
 - (void)setMaxToUpLoad:(NSInteger)max {
+    if (max<0) {
+        // 非法参数
+        return;
+    }
     _max = max;
 }
 @end

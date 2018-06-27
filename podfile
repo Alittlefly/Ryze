@@ -1,0 +1,19 @@
+platform:ios,'9.0'
+use_frameworks!
+
+def pods
+   pod 'Aspects'
+#   pod 'FMDBHelper'
+   pod 'MJExtension', '~> 3.0.13'
+   pod 'FMDB', '~> 2.7.2'
+   pod 'LKDBHelper'
+   pod 'AFNetworking'
+end
+
+target 'Ryze' do
+   pods
+end
+
+target 'libRyze' do
+    pods
+end

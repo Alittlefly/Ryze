@@ -30,6 +30,7 @@
     NSInteger _currentItemsCount;
     BOOL _haveNextUpload;
     __block BOOL _inUpload;
+    NSTimer *_timer ;
 }
 @property(nonatomic,strong)NSMutableArray *cacheInfos;
 @property(nonatomic,strong)RyzeActionInfoCounter *counter;
@@ -55,13 +56,23 @@ static RyzeCacheManager *sharedCacheManager;
 - (instancetype)init {
     if (self = [super init]) {
         _cacheInfoQueue = dispatch_queue_create("com.Ryze.CacheInfo", 0);
-        self.counter = [[RyzeActionInfoCounter alloc] init];
-        [self.counter addObserver:self forKeyPath:@"count" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
-        dispatch_async(_cacheInfoQueue, ^{
-            NSArray *allSavedInfo = [RyzeActionInfo searchWithWhere:nil];
-            [self.cacheInfos addObjectsFromArray:allSavedInfo];
-            self.counter.count = [self.cacheInfos count];
-        });
+        
+        RyzeUploadType type = [RyzeConfinger defaultConfinger].uploadType;
+        NSTimeInterval interval = [RyzeConfinger defaultConfinger].interval;
+        if (type == RyzeUploadTypeByAmount) {
+            self.counter = [[RyzeActionInfoCounter alloc] init];
+            [self.counter addObserver:self forKeyPath:@"count" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
+            dispatch_async(_cacheInfoQueue, ^{
+                NSArray *allSavedInfo = [RyzeActionInfo searchWithWhere:nil];
+                [self.cacheInfos addObjectsFromArray:allSavedInfo];
+                self.counter.count = [self.cacheInfos count];
+            });
+        }else if (type == RyzeUploadTypeByTime){
+            //
+            //
+            _timer = [NSTimer timerWithTimeInterval:interval target:self selector:@selector(uploadAllActionInfo) userInfo:nil repeats:YES];
+            [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
+        }
     }
     return self;
 }
@@ -115,58 +126,116 @@ static RyzeCacheManager *sharedCacheManager;
             
             _inUpload = YES;
             
-            if (!self.uploader) {
-                // 未配置上传工具
-                return;
-            }
-            
             __block NSInteger count = [RyzeActionInfo rowCountWithWhere:nil];
             NSLog(@"上传开始 ========================= start");
             NSLog(@"delete 前 还剩: %ld",count);
             // 移除
             NSArray *subArray = [self.cacheInfos subarrayWithRange:NSMakeRange(0, max)];
             
-            NSMutableArray *uploadInfos = [NSMutableArray array];
-            for (RyzeActionInfo *action in subArray) {
-                NSDictionary *dict = [action mj_keyValues];
-                [uploadInfos addObject:dict];
-            }
-            NSData *data = [uploadInfos mj_JSONData];
-            
-            BOOL needGzip = [RyzeConfinger defaultConfinger].enableGizp;
-            
-            if (needGzip) {
-                data = [RyzeGzipUtil ryze_gzipData:data];
-            }
-
-            [self.uploader ryze_uploadData:data enableGizp:needGzip successBlock:^{
-                dispatch_async(self->_cacheInfoQueue, ^{
-                    // 删除数据
-                    NSString *sqlLimit = [NSString stringWithFormat:@"delete from RyzeActionInfo where rowid in (select rowid from RyzeActionInfo limit 0,%ld)",max];
-                    // 删除
-                    [RyzeActionInfo searchWithSQL:sqlLimit];
-                    [self.cacheInfos removeObjectsInArray:subArray];
-                    
+            [self updloadActionInfos:subArray successBlock:^{
+                
                     count = [RyzeActionInfo rowCountWithWhere:nil];
                     NSLog(@"delete 后 还剩: %ld",count);
                     NSLog(@"上传完成 ========================= end");
-
                     self -> _inUpload = NO;
-                    
+                
                     if (self->_haveNextUpload) {
                         // 触发下次
                         // 超过了max 重新触发
                         self.counter.count = [self.cacheInfos count];
                     }
-                });
             } faildBlock:^{
                 dispatch_async(self->_cacheInfoQueue, ^{
                     self -> _inUpload = NO;
                 });
             }];
+//            NSMutableArray *uploadInfos = [NSMutableArray array];
+//            for (RyzeActionInfo *action in subArray) {
+//                NSDictionary *dict = [action mj_keyValues];
+//                [uploadInfos addObject:dict];
+//            }
+//            NSData *data = [uploadInfos mj_JSONData];
+//
+//            BOOL needGzip = [RyzeConfinger defaultConfinger].enableGizp;
+//
+//            if (needGzip) {
+//                data = [RyzeGzipUtil ryze_gzipData:data];
+//            }
+//
+//            [self.uploader ryze_uploadData:data enableGizp:needGzip successBlock:^{
+//                dispatch_async(self->_cacheInfoQueue, ^{
+//                    // 删除数据
+//                    NSString *sqlLimit = [NSString stringWithFormat:@"delete from RyzeActionInfo where rowid in (select rowid from RyzeActionInfo limit 0,%ld)",max];
+//                    // 删除
+//                    [RyzeActionInfo searchWithSQL:sqlLimit];
+//                    [self.cacheInfos removeObjectsInArray:subArray];
+//
+//                    count = [RyzeActionInfo rowCountWithWhere:nil];
+//                    NSLog(@"delete 后 还剩: %ld",count);
+//                    NSLog(@"上传完成 ========================= end");
+//
+//                    self -> _inUpload = NO;
+//
+//                    if (self->_haveNextUpload) {
+//                        // 触发下次
+//                        // 超过了max 重新触发
+//                        self.counter.count = [self.cacheInfos count];
+//                    }
+//                });
+//            } faildBlock:^{
+//                dispatch_async(self->_cacheInfoQueue, ^{
+//                    self -> _inUpload = NO;
+//                });
+//            }];
         }else{
             _haveNextUpload = NO;
         }
     }
+}
+- (void)uploadAllActionInfo {
+    dispatch_async(_cacheInfoQueue, ^{
+        //
+        NSArray *infos = [NSArray arrayWithArray:self.cacheInfos];
+        [self updloadActionInfos:infos successBlock:nil faildBlock:nil];
+    });
+}
+
+- (void)updloadActionInfos:(NSArray *)infos successBlock:(RyzeSuccessBlock)success faildBlock:(RyzeFaildBlock)faildBlock {
+    
+    if (!self.uploader) {
+        // 未配置上传工具
+        return;
+    }
+    
+    NSMutableArray *uploadInfos = [NSMutableArray array];
+    for (RyzeActionInfo *action in infos) {
+        NSDictionary *dict = [action mj_keyValues];
+        [uploadInfos addObject:dict];
+    }
+    NSData *data = [uploadInfos mj_JSONData];
+    
+    BOOL needGzip = [RyzeConfinger defaultConfinger].enableGizp;
+    
+    if (needGzip) {
+        data = [RyzeGzipUtil ryze_gzipData:data];
+    }
+    
+    [self.uploader ryze_uploadData:data enableGizp:needGzip successBlock:^{
+        dispatch_async(self->_cacheInfoQueue, ^{
+            // 删除数据
+            NSString *sqlLimit = [NSString stringWithFormat:@"delete from RyzeActionInfo where rowid in (select rowid from RyzeActionInfo limit 0,%ld)",(long)infos.count];
+            // 删除
+            [RyzeActionInfo searchWithSQL:sqlLimit];
+            [self.cacheInfos removeObjectsInArray:infos];
+            
+            if (success) {
+                success();
+            }
+        });
+    } faildBlock:^{
+        if (faildBlock) {
+            faildBlock();
+        }
+    }];
 }
 @end

@@ -21,11 +21,11 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
 
-    [RyzeAspectManager ryze_createFuntionHook];
     [RyzeAspectManager ryze_enableGzip:YES];
-    [RyzeAspectManager ryze_setMaxUpload:10];
+    [RyzeAspectManager ryze_setMaxUpload:50];
     [RyzeAspectManager ryze_configUploader:[RyzeUploader new]];
-    
+    [RyzeAspectManager ryze_createFuntionHook];
+
     NSSetUncaughtExceptionHandler(&UncaughtExceptionHandler);
     
     return YES;
@@ -33,6 +33,12 @@
 
 void UncaughtExceptionHandler(NSException *exception){
     //  Crash
+    [RyzeAspectManager ryze_saveAllUnUploadInfo];
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application {
+    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    // 5s
     [RyzeAspectManager ryze_saveAllUnUploadInfo];
 }
 
@@ -58,11 +64,6 @@ void UncaughtExceptionHandler(NSException *exception){
 }
 
 
-- (void)applicationWillTerminate:(UIApplication *)application {
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-    // 5s
-    [RyzeAspectManager ryze_saveAllUnUploadInfo];
-}
 
 
 @end

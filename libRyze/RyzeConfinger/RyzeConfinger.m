@@ -23,6 +23,9 @@ static RyzeConfinger * confinger;
     if (self = [super init]) {
         _max = 50;
         _enableGizp = YES;
+        _uploadType = RyzeUploadTypeByAmount;
+        // 2分钟传一次
+        _interval = 120;
     }
     return self;
 }
@@ -37,5 +40,16 @@ static RyzeConfinger * confinger;
         return;
     }
     _max = max;
+}
+
+- (void)setUploadType:(RyzeUploadType)uploadType {
+    _uploadType = uploadType;
+}
+
+- (void)setTimeInterval:(NSTimeInterval)interval {
+    if (interval <= 0) {
+        return;
+    }
+    _interval = interval;
 }
 @end

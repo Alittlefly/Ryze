@@ -10,7 +10,7 @@
 #import "RyzeUploadProtocol.h"
 
 @interface RyzeAspectManager : NSObject
-// 创建埋点监控  step1
+// 创建埋点监控  step last
 +(void)ryze_createFuntionHook;
 // 创建上传工具 step2
 +(void)ryze_configUploader:(id<RyzeUploadProtocol>)uploader;

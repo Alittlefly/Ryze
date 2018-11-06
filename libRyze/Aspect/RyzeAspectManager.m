@@ -47,6 +47,7 @@
 // crash & Terminate
 +(void)ryze_UploadAllInfo {
     //
+    [[RyzeCacheManager sharedRyzeCache] uploadAllActionInfo];
 }
 
 +(void)dealHookedEvent:(NSString *)event aspectInfos:(id<AspectInfo>)aspectInfo

@@ -22,4 +22,6 @@
 - (void)setUploaderClass:(Class<RyzeUploadProtocol>)className;
 
 - (void)saveAllActions;
+
+- (void)uploadAllActionInfo;
 @end

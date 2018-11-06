@@ -34,7 +34,7 @@
 		0441D65720DCD26D001E335F /* RyzeCacheManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 0441D65520DCD26D001E335F /* RyzeCacheManager.m */; };
 		0441D65A20DCD6B5001E335F /* RyzeActionInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 0441D65820DCD6B5001E335F /* RyzeActionInfo.h */; };
 		0441D65B20DCD6B5001E335F /* RyzeActionInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 0441D65920DCD6B5001E335F /* RyzeActionInfo.m */; };
-		0441D66220DCD9A5001E335F /* RyzeUploadProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = 0441D66120DCD9A5001E335F /* RyzeUploadProtocol.h */; };
+		0441D66220DCD9A5001E335F /* RyzeUploadProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = 0441D66120DCD9A5001E335F /* RyzeUploadProtocol.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		046B06A020E0DB210057C0A4 /* RyzeUploader.h in Headers */ = {isa = PBXBuildFile; fileRef = 046B069E20E0DB210057C0A4 /* RyzeUploader.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		046B06A120E0DB210057C0A4 /* RyzeUploader.m in Sources */ = {isa = PBXBuildFile; fileRef = 046B069F20E0DB210057C0A4 /* RyzeUploader.m */; };
 		8130B3606B95F28BF707FDBC /* Pods_libRyze.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 261FDBE014A23E6E1F7D5C12 /* Pods_libRyze.framework */; };
